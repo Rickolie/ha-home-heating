@@ -213,14 +213,37 @@ SECTIONS = [
     {
         "id": "history",
         "title": "History",
+        "help": (
+            "Learns from your own heat pump how it actually runs at each outside temperature. Once a day, and at "
+            "start-up, it reads all history of the master sensors of four inputs: outside temperature, heat pump "
+            "water target temperature, heat pump power and COP.\n\n"
+            "How a day is calculated:\n"
+            "- Per day the time-weighted average of each value: a value counts for as long as it was the current one.\n"
+            "- COP readings of 0 (heat pump off) are left out of the COP average.\n"
+            "- Recent days come from the exact recorded history (as long as the recorder keeps it, default 10 days). "
+            "Older days come from the hourly long-term statistics, which are kept forever; only sensors with a "
+            "state class have those.\n"
+            "- A day only counts when the data covers enough of it, and when the heat pump was used: at least "
+            "'Day used from' of energy, and power above 'Heat pump running above' at some point. Today never counts.\n\n"
+            "Result, on the Status tab and in sensor.home_heating_heat_pump_history:\n"
+            "- A straight line per value against the outside temperature: water temperature = slope × outside "
+            "temperature + intercept. This is the History heating curve you can choose on the Heat pump tab "
+            "instead of your lookup table.\n"
+            "- The expected power and COP at the current outside temperature.\n"
+            "- Averages, and a table with the averages per whole °C outside temperature.\n\n"
+            "Use 'Recalculate history' on the Status tab to run it now, for example after changing these settings."
+        ),
         "fields": [
-            {"key": "history_time", "type": "time", "default": "00:05", "label": "Recalculate daily at"},
+            {"key": "history_time", "type": "time", "default": "00:05", "label": "Recalculate daily at",
+             "help": "Once a day at this time, and at every start-up."},
             {"key": "min_run_power", "type": "number", "default": 50, "min": 0, "max": 2000, "step": 10, "unit": "W",
-             "label": "Heat pump running above"},
+             "label": "Heat pump running above",
+             "help": "Power above this means the heat pump is running: for the 'used' check and the running hours."},
             {"key": "min_day_energy", "type": "number", "default": 0.5, "min": 0, "max": 50, "step": 0.1, "unit": "kWh",
-             "label": "Day used from"},
+             "label": "Day used from", "help": "A day with less heat pump energy is left out."},
             {"key": "min_day_coverage", "type": "number", "default": 0.9, "min": 0.5, "max": 1, "step": 0.05,
-             "label": "Data needed per day (fraction)"},
+             "label": "Data needed per day (fraction)",
+             "help": "Part of the day the outside temperature and power must have data. 0.9 = 21.6 hours."},
         ],
     },
     {

@@ -238,8 +238,20 @@ class HomeHeatingPanel extends HTMLElement {
   _sectionView(section) {
     return el("div", { class: "card wide" },
       el("h2", {}, section.title),
-      section.help ? el("p", { class: "muted" }, section.help) : null,
+      section.help ? this._helpText(section.help) : null,
       section.fields.map((f) => this._field(f)));
+  }
+
+  // Paragraphs separated by an empty line; lines starting with "- " become a list
+  _helpText(text) {
+    return el("div", { class: "section-help" }, text.split("\n\n").map((block) => {
+      const lines = block.split("\n");
+      const items = lines.filter((l) => l.startsWith("- "));
+      const intro = lines.filter((l) => !l.startsWith("- "));
+      return el("div", {},
+        intro.length ? el("p", {}, intro.join(" ")) : null,
+        items.length ? el("ul", {}, items.map((l) => el("li", {}, l.slice(2)))) : null);
+    }));
   }
 
   _set(key, value) {
@@ -379,6 +391,10 @@ const STYLE = `
   button.primary { background: var(--primary-color); color: var(--text-primary-color, #fff); border-color: var(--primary-color); }
   .entity-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
   .created { font-size: 13px; }
+  .section-help { color: var(--secondary-text-color); font-size: 14px; line-height: 1.45; margin-bottom: 8px; }
+  .section-help p { margin: 0 0 6px; }
+  .section-help ul { margin: 0 0 10px; padding-left: 20px; }
+  .section-help li { margin-bottom: 3px; }
   .role { width: 70px; font-size: 12px; color: var(--secondary-text-color); }
   .buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .message-area { position: sticky; top: 88px; z-index: 1; padding: 0 16px; }
