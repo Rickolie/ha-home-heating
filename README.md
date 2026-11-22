@@ -87,6 +87,7 @@ Run the tests:
 
 ```bash
 pip install -r requirements_test.txt
+pip install "$(python scripts/frontend_requirement.py)"  # the frontend, for the sidebar page
 pytest
 ```
 
