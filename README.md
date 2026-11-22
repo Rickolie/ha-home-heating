@@ -93,4 +93,4 @@ pytest
 
 `tests/logic/` tests the algorithms (including a comparison with the original Node-RED history flow), `tests/integration/` runs the integration in a real Home Assistant core.
 
-Release a new version: raise `version` in `manifest.json` and `VERSION` in `const.py`, push, and create a GitHub release. HACS then offers the update.
+Release a new version: raise `version` in `manifest.json` and `VERSION` in `const.py` and push. When all checks pass, the Validate workflow creates the GitHub release `v<version>` by itself. HACS then offers the update.

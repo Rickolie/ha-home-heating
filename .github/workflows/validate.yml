@@ -31,3 +31,24 @@ jobs:
         with:
           category: integration
           ignore: brands
+
+  # A new version in manifest.json on main, with all checks green: create the GitHub release,
+  # so the Marketplace / HACS offers the update.
+  release:
+    needs: [tests, hassfest, hacs]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create the release for the manifest version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(jq -r .version custom_components/home_heating/manifest.json)
+          if gh release view "v$version" > /dev/null 2>&1; then
+            echo "v$version is already released"
+            exit 0
+          fi
+          gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" --generate-notes
