@@ -36,6 +36,16 @@ SECTIONS = [
         "fields": [
             {"key": "in_outside_temp", "type": "entities", "domains": TEMP, "label": "Outside temperature",
              "default": ["sensor.sparrow_p60_heat_pump_outside_temperature"]},
+            {"key": "weather_entity", "type": "entity", "domains": ["weather"], "label": "Outside temperature forecast",
+             "default": "weather.forecast_home",
+             "help": "Weather entity with an hourly forecast (Met.no: weather.forecast_home). Only used when the "
+             "outside temperature is set to Forecast on the Heat pump tab: by default the average of 3 to 5 hours "
+             "ahead, for the heating curve, the simple day schedule and cooling."},
+            {"key": "weather_temperature_sensors", "type": "entity_list", "domains": ["weather"], "default": [],
+             "label": "Temperature sensors from weather entities",
+             "help": "Creates a separate sensor with the current temperature of each weather entity (e.g. Met.no), "
+             "named sensor.home_heating_..._temperature. Add it above as a backup sensor; it goes unavailable when "
+             "the weather entity stops delivering."},
             {"key": "in_inside_temp", "type": "entities", "domains": TEMP, "label": "Inside temperature",
              "default": []},
             {"key": "in_water_target_temp", "type": "entities", "domains": TEMP, "label": "Heat pump water target temperature",
@@ -55,16 +65,6 @@ SECTIONS = [
              "help": "For heating the boiler on the cheapest prices. Empty: always plan the cheapest hours."},
             {"key": "in_holiday", "type": "entities", "domains": ["input_boolean", "binary_sensor", "switch"],
              "label": "On holiday", "default": ["input_boolean.onholiday"]},
-            {"key": "weather_entity", "type": "entity", "domains": ["weather"], "label": "Outside temperature forecast",
-             "default": "weather.forecast_home",
-             "help": "Weather entity with an hourly forecast (Met.no: weather.forecast_home). Only used when the "
-             "outside temperature is set to Forecast on the Heat pump tab: by default the average of 3 to 5 hours "
-             "ahead, for the heating curve, the simple day schedule and cooling."},
-            {"key": "weather_temperature_sensors", "type": "entity_list", "domains": ["weather"], "default": [],
-             "label": "Temperature sensors from weather entities",
-             "help": "Creates a separate sensor with the current temperature of each weather entity (e.g. Met.no), "
-             "named sensor.home_heating_..._temperature. Add it above as a backup sensor; it goes unavailable when "
-             "the weather entity stops delivering."},
             {"key": "input_max_age_minutes", "type": "number", "default": 0, "min": 0, "max": 1440, "step": 5,
              "unit": "min", "label": "Sensor stale after",
              "help": "A sensor that did not report for this long counts as unavailable. 0: no check "

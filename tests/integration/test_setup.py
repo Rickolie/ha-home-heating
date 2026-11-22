@@ -19,3 +19,13 @@ async def test_setup_creates_entities(hass: HomeAssistant) -> None:
     state = hass.states.get("sensor.home_heating_feedforward_water_temperature")
     assert state is not None and float(state.state) == 32.5
     print(sorted(s.entity_id for s in hass.states.async_all() if s.entity_id.split(".")[1].startswith("home_heating")))
+
+
+async def test_version_matches_manifest(hass: HomeAssistant) -> None:
+    import json
+    from pathlib import Path
+
+    from custom_components.home_heating.const import VERSION
+
+    manifest = json.loads((Path(__file__).parents[2] / "custom_components/home_heating/manifest.json").read_text())
+    assert manifest["version"] == VERSION

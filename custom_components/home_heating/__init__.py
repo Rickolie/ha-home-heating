@@ -18,12 +18,11 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
 from . import settings, websocket
-from .const import DOMAIN, NAME, PANEL_COMPONENT, PANEL_URL, STATIC_URL
+from .const import DOMAIN, NAME, PANEL_COMPONENT, PANEL_URL, STATIC_URL, VERSION
 from .controller import Controller
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-VERSION = "0.1.2"
 
 type HomeHeatingConfigEntry = ConfigEntry[Controller]
 

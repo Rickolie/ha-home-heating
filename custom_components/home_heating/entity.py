@@ -6,7 +6,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
 
-from .const import DOMAIN, NAME, SIGNAL_UPDATE
+from .const import DOMAIN, NAME, SIGNAL_UPDATE, VERSION
 from .controller import Controller
 
 
@@ -22,6 +22,7 @@ class HomeHeatingEntity(Entity):
             identifiers={(DOMAIN, controller.entry.entry_id)},
             name=NAME,
             manufacturer="Home Heating",
+            sw_version=VERSION,
             entry_type=DeviceEntryType.SERVICE,
         )
 

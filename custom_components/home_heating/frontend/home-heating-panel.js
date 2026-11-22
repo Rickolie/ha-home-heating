@@ -218,7 +218,7 @@ class HomeHeatingPanel extends HTMLElement {
         el("button", { onclick: () => this._action("start_legionella", "Start legionella run") }, "Start legionella run")));
 
     return el("div", { class: "grid" }, watchdog, heat, boiler, inputs, history, actions,
-      el("div", { class: "muted footer" }, `Updated ${fmt((d.updated || "").slice(11, 19))}`));
+      el("div", { class: "muted footer" }, `Home Heating ${fmt(d.version)} · updated ${fmt((d.updated || "").slice(11, 19))}`));
   }
 
   _label(key) {

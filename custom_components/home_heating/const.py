@@ -1,6 +1,7 @@
 """Constants of Home Heating."""
 
 DOMAIN = "home_heating"
+VERSION = "0.1.3"  # keep equal to manifest.json
 NAME = "Home Heating"
 SIGNAL_UPDATE = f"{DOMAIN}_update"
 EVENT_ALERT = f"{DOMAIN}_alert"
