@@ -286,15 +286,11 @@ class HomeHeatingPanel extends HTMLElement {
   _entityInput(f, value, onchange) {
     const listId = `list-${f.key}`;
     const state = value ? this._hass.states[value] : null;
-    const weather = state && value.startsWith("weather.") && state.attributes.temperature !== undefined;
-    const shown = !state ? "" : weather
-      ? ` ${state.attributes.temperature} ${state.attributes.temperature_unit || "°C"} (${state.state})`
-      : ` ${state.state}${state.attributes.unit_of_measurement ? " " + state.attributes.unit_of_measurement : ""}`;
     return el("span", { class: "entity" },
       el("input", { type: "text", value: value || "", list: listId, placeholder: "entity_id",
         onchange: (e) => { onchange(e.target.value.trim()); this._renderContent(); } }),
       el("datalist", { id: listId }, this._entityIds(f.domains).map((id) => el("option", { value: id }))),
-      value ? el("span", { class: state ? "muted" : "warn" }, state ? shown : " does not exist") : null);
+      value ? el("span", { class: state ? "muted" : "warn" }, state ? ` ${state.state}${state.attributes.unit_of_measurement ? " " + state.attributes.unit_of_measurement : ""}` : " does not exist") : null);
   }
 
   _entitiesInput(f) {

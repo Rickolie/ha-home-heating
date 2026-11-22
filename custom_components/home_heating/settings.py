@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-TEMP = ["sensor", "input_number", "number", "weather"]  # weather: its current temperature
+TEMP = ["sensor", "input_number", "number"]
 NUMBER_OUT = ["number", "input_number", "climate", "water_heater"]
 
 # Field types: bool, number, text, time, select, weekday, entity (one), entities (master + backups),
@@ -31,8 +31,7 @@ SECTIONS = [
         "id": "inputs",
         "title": "Inputs",
         "help": "Per input one or more entities. The first is the master; when it is unavailable the next one "
-        "takes over. The watchdog reports unavailable, stale and deviating sensors. For temperatures a weather "
-        "entity can be used too (its current temperature); the history then uses the first other sensor.",
+        "takes over. The watchdog reports unavailable, stale and deviating sensors.",
         "fields": [
             {"key": "in_outside_temp", "type": "entities", "domains": TEMP, "label": "Outside temperature",
              "default": ["sensor.sparrow_p60_heat_pump_outside_temperature"]},
