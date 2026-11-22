@@ -225,3 +225,57 @@ async def test_unload(hass: HomeAssistant) -> None:
     entry = await setup(hass, {})
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
+
+
+MET = "weather.met_no_51_4401196205128_5_452874344063418"
+MET_SENSOR = "sensor.home_heating_met_no_home_temperature"
+
+
+async def test_weather_temperature_sensor(hass: HomeAssistant, hass_ws_client) -> None:
+    states = {MET: ("cloudy", {"temperature": 5.2, "temperature_unit": "°C", "friendly_name": "Met.no Home"}),
+              "sensor.sparrow_p60_heat_pump_outside_temperature": "unavailable"}
+    entry = await setup(hass, states, stub_devices=False, weather_temperature_sensors=[MET],
+                        in_outside_temp=["sensor.sparrow_p60_heat_pump_outside_temperature", MET_SENSOR])
+    state = hass.states.get(MET_SENSOR)
+    assert state.state == "5.2" and state.attributes["unit_of_measurement"] == "°C"
+    assert state.attributes["condition"] == "cloudy" and state.attributes["weather_entity"] == MET
+
+    # follows the weather entity directly
+    hass.states.async_set(MET, "sunny", {"temperature": 6.0, "temperature_unit": "°C", "friendly_name": "Met.no Home"})
+    await hass.async_block_till_done()
+    assert hass.states.get(MET_SENSOR).state == "6.0"
+
+    # as backup input: the own sensor is unavailable, the Met.no sensor takes over
+    await tick(hass, entry)
+    reading = entry.runtime_data.status()["inputs"]["in_outside_temp"]
+    assert (reading["value"], reading["source"], reading["status"]) == (6.0, MET_SENSOR, "backup")
+
+    # Met.no stops delivering: the sensor goes unavailable, the watchdog reports the input
+    hass.states.async_set(MET, "unavailable", {"friendly_name": "Met.no Home"})
+    await hass.async_block_till_done()
+    assert hass.states.get(MET_SENSOR).state == "unavailable"
+    hass.states.async_set(MET, "cloudy", {"friendly_name": "Met.no Home"})  # no temperature
+    await hass.async_block_till_done()
+    assert hass.states.get(MET_SENSOR).state == "unavailable"
+    await tick(hass, entry)
+    assert entry.runtime_data.status()["inputs"]["in_outside_temp"]["status"] == "unavailable"
+
+    # removed from the list: the sensor is removed
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "home_heating/save", "settings": {"weather_temperature_sensors": []}})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done(wait_background_tasks=True)
+    from homeassistant.helpers import entity_registry as er
+    assert er.async_get(hass).async_get(MET_SENSOR) is None
+    assert hass.states.get(MET_SENSOR) is None
+
+
+async def test_weather_sensor_added_from_settings_page(hass: HomeAssistant, hass_ws_client) -> None:
+    states = {MET: ("cloudy", {"temperature": 4.0, "friendly_name": "Met.no Home"})}
+    await setup(hass, states, stub_devices=False)
+    assert hass.states.get(MET_SENSOR) is None
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "home_heating/save", "settings": {"weather_temperature_sensors": [MET, ""]}})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert hass.states.get(MET_SENSOR).state == "4.0"

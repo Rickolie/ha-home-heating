@@ -268,6 +268,9 @@ class HomeHeatingPanel extends HTMLElement {
       case "entities":
         input = this._entitiesInput(f);
         break;
+      case "entity_list":
+        input = this._entitiesInput(f, false);
+        break;
       case "table":
         input = this._tableInput(f);
         break;
@@ -293,16 +296,16 @@ class HomeHeatingPanel extends HTMLElement {
       value ? el("span", { class: state ? "muted" : "warn" }, state ? ` ${state.state}${state.attributes.unit_of_measurement ? " " + state.attributes.unit_of_measurement : ""}` : " does not exist") : null);
   }
 
-  _entitiesInput(f) {
+  _entitiesInput(f, roles = true) {
     const list = [...(this._draft[f.key] || [])];
     const update = (newList) => { this._set(f.key, newList); this._renderContent(); };
     return el("div", { class: "entities" },
       list.map((id, i) => el("div", { class: "entity-row" },
-        el("span", { class: "role" }, i === 0 ? "master" : `backup ${i}`),
+        roles ? el("span", { class: "role" }, i === 0 ? "master" : `backup ${i}`) : null,
         this._entityInput({ ...f, key: `${f.key}-${i}` }, id, (v) => { const n = [...list]; n[i] = v; update(n.filter(Boolean)); }),
-        i > 0 ? el("button", { title: "Make master", onclick: () => { const n = [...list]; n.splice(i, 1); n.unshift(id); update(n); } }, "▲ master") : null,
+        roles && i > 0 ? el("button", { title: "Make master", onclick: () => { const n = [...list]; n.splice(i, 1); n.unshift(id); update(n); } }, "▲ master") : null,
         el("button", { title: "Remove", onclick: () => { const n = [...list]; n.splice(i, 1); update(n); } }, "✕"))),
-      el("button", { onclick: () => update([...list, ""]) }, list.length ? "+ backup sensor" : "+ sensor"));
+      el("button", { onclick: () => update([...list, ""]) }, !roles ? "+ add" : list.length ? "+ backup sensor" : "+ sensor"));
   }
 
   _tableInput(f) {

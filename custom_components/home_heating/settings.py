@@ -13,6 +13,7 @@ TEMP = ["sensor", "input_number", "number"]
 NUMBER_OUT = ["number", "input_number", "climate", "water_heater"]
 
 # Field types: bool, number, text, time, select, weekday, entity (one), entities (master + backups),
+# entity_list (several, no order),
 # table (rows of outside / water)
 SECTIONS = [
     {
@@ -59,6 +60,11 @@ SECTIONS = [
              "help": "Weather entity with an hourly forecast (Met.no: weather.forecast_home). Only used when the "
              "outside temperature is set to Forecast on the Heat pump tab: by default the average of 3 to 5 hours "
              "ahead, for the heating curve, the simple day schedule and cooling."},
+            {"key": "weather_temperature_sensors", "type": "entity_list", "domains": ["weather"], "default": [],
+             "label": "Temperature sensors from weather entities",
+             "help": "Creates a separate sensor with the current temperature of each weather entity (e.g. Met.no), "
+             "named sensor.home_heating_..._temperature. Add it above as a backup sensor; it goes unavailable when "
+             "the weather entity stops delivering."},
             {"key": "input_max_age_minutes", "type": "number", "default": 0, "min": 0, "max": 1440, "step": 5,
              "unit": "min", "label": "Sensor stale after",
              "help": "A sensor that did not report for this long counts as unavailable. 0: no check "
@@ -287,7 +293,7 @@ def validate(raw: dict) -> dict:
             elif t == "weekday":
                 if value not in ("mon", "tue", "wed", "thu", "fri", "sat", "sun"):
                     raise ValueError("invalid weekday")
-            elif t == "entities":
+            elif t in ("entities", "entity_list"):
                 value = [str(v).strip() for v in (value or []) if str(v).strip()]
             elif t == "table":
                 rows = [{"outside": float(r["outside"]), "water": float(r["water"])} for r in value or []]

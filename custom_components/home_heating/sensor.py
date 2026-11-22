@@ -10,8 +10,11 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN, UnitOfTemperature
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_state_change_event
 
 from .const import INPUTS
 from .entity import HomeHeatingEntity
@@ -93,7 +96,17 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddE
     controller = entry.runtime_data
     entities: list[SensorEntity] = [HomeHeatingSensor(controller, d) for d in SENSORS]
     entities += [InputSensor(controller, key) for key, (_l, _u, numeric, _n) in INPUTS.items() if numeric]
+    weather = [e for e in dict.fromkeys(controller.s.get("weather_temperature_sensors") or []) if e]
+    entities += [WeatherTemperatureSensor(controller, entity_id) for entity_id in weather]
     async_add_entities(entities)
+
+    # Remove the sensors of weather entities that are no longer in the list
+    registry = er.async_get(hass)
+    prefix = f"{entry.entry_id}_weather_"
+    wanted = {f"{prefix}{entity_id}" for entity_id in weather}
+    for reg in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if reg.domain == "sensor" and reg.unique_id.startswith(prefix) and reg.unique_id not in wanted:
+            registry.async_remove(reg.entity_id)
 
 
 class HomeHeatingSensor(HomeHeatingEntity, SensorEntity):
@@ -140,3 +153,52 @@ class InputSensor(HomeHeatingEntity, SensorEntity):
     def extra_state_attributes(self) -> dict:
         r = self._reading
         return {"source": r.get("source"), "status": r.get("status"), "problems": r.get("problems", [])}
+
+
+class WeatherTemperatureSensor(HomeHeatingEntity, SensorEntity):
+    """The current temperature of a weather entity, as a separate sensor (for example as a backup input).
+
+    Unavailable when the weather entity is unavailable or has no temperature, so the watchdog reports it.
+    """
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, controller, weather_entity: str) -> None:
+        st = controller.hass.states.get(weather_entity)
+        label = st.name if st else weather_entity.split(".", 1)[1].replace("_", " ")
+        super().__init__(controller, f"weather_{weather_entity}", f"{label} temperature")
+        self.weather_entity = weather_entity
+
+    def _weather(self):
+        st = self.hass.states.get(self.weather_entity)
+        if st is None or st.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+            return None
+        return st
+
+    @property
+    def available(self) -> bool:
+        st = self._weather()
+        return st is not None and isinstance(st.attributes.get("temperature"), (int, float))
+
+    @property
+    def native_value(self):
+        st = self._weather()
+        return st.attributes.get("temperature") if st else None
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        st = self.hass.states.get(self.weather_entity)
+        return (st.attributes.get("temperature_unit") if st else None) or UnitOfTemperature.CELSIUS
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        st = self.hass.states.get(self.weather_entity)
+        return {"weather_entity": self.weather_entity, "condition": st.state if st else None}
+
+    async def async_added_to_hass(self) -> None:
+        @callback
+        def _changed(event: Event[EventStateChangedData]) -> None:
+            self.async_write_ha_state()
+
+        self.async_on_remove(async_track_state_change_event(self.hass, [self.weather_entity], _changed))

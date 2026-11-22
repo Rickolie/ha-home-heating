@@ -17,13 +17,13 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
-from . import websocket
+from . import settings, websocket
 from .const import DOMAIN, NAME, PANEL_COMPONENT, PANEL_URL, STATIC_URL
 from .controller import Controller
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 type HomeHeatingConfigEntry = ConfigEntry[Controller]
 
@@ -75,7 +75,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: HomeHeatingConfigEntry)
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: HomeHeatingConfigEntry) -> None:
-    await entry.runtime_data.async_apply_settings()
+    controller = entry.runtime_data
+    key = "weather_temperature_sensors"
+    if controller.s.get(key) != settings.merged(entry.options).get(key):
+        await hass.config_entries.async_reload(entry.entry_id)  # sensors added or removed
+        return
+    await controller.async_apply_settings()
 
 
 async def _async_register_panel(hass: HomeAssistant) -> None:
