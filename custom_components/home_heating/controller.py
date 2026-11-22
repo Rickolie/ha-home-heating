@@ -412,7 +412,7 @@ class Controller:
             "updated": now.isoformat(),
             "version": VERSION,
             "outputs_enabled": s["outputs_enabled"],
-            "inputs": {key: asdict(r) for key, r in readings.items()},
+            "inputs": {key: {**asdict(r), "unit": INPUTS[key][1]} for key, r in readings.items()},
             "outside_avg_24h": None if outside_avg is None else round(outside_avg, 1),
             "feedforward": asdict(ff),
             "ventilation": {"active": vent_active, "reason": vent_reason},

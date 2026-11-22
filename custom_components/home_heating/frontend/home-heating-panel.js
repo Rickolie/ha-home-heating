@@ -199,12 +199,12 @@ class HomeHeatingPanel extends HTMLElement {
 
     const inputs = card("Inputs",
       el("table", {},
-        el("tr", {}, el("th", {}, "Input"), el("th", {}, "Value"), el("th", {}, "Source")),
+        el("tr", {}, el("th", {}, "Input"), el("th", { class: "value" }, "Value"), el("th", {}, "Source")),
         Object.entries(d.inputs || {}).filter(([, r]) => r.status !== "not configured").map(([key, r]) =>
           el("tr", {},
             el("td", {}, this._label(key)),
-            el("td", {}, fmt(r.value)),
-            el("td", { class: r.status === "master" ? "" : "warn" }, r.source ? `${r.source} (${r.status})` : r.status)))));
+            el("td", { class: "value" }, fmt(r.value, r.unit)),
+            el("td", { class: `source ${r.status === "master" ? "" : "warn"}` }, r.source ? `${r.source} (${r.status})` : r.status)))));
 
     const hist = d.history || {};
     const water = (hist.fit || {}).water_target_temp || {};
@@ -366,6 +366,8 @@ const STYLE = `
   table { border-collapse: collapse; width: 100%; font-size: 13px; }
   th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--divider-color); vertical-align: middle; }
   table.points { width: auto; }
+  th.value, td.value { white-space: nowrap; text-align: right; padding-right: 12px; }
+  td.source { overflow-wrap: anywhere; font-size: 12px; }
   table.points input { width: 80px; }
   .field { display: grid; grid-template-columns: minmax(180px, 1fr) 2fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--divider-color); }
   .field label { padding-top: 6px; }
