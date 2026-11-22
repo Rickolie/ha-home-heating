@@ -58,7 +58,8 @@ async def setup(hass: HomeAssistant, states: dict, stub_devices: bool = True, **
     entry.add_to_hass(hass)
     with patch("custom_components.home_heating.controller.Controller._pause", AsyncMock()):
         assert await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+        # also the start-up history job, which runs the controller once more when it is done
+        await hass.async_block_till_done(wait_background_tasks=True)
     if stub_devices:
         register_device_services(hass)
     return entry
@@ -67,6 +68,7 @@ async def setup(hass: HomeAssistant, states: dict, stub_devices: bool = True, **
 async def tick(hass: HomeAssistant, entry: MockConfigEntry) -> list[str]:
     """One run. Returns the device service calls made, in order, and how often it waited."""
     SERVICE_LOG.clear()
+    assert not entry.runtime_data._lock.locked(), "a run is still busy, this run would be skipped"
     with patch("custom_components.home_heating.controller.Controller._pause", AsyncMock()) as sleep:
         await entry.runtime_data.async_tick()
         await hass.async_block_till_done()
