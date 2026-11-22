@@ -279,3 +279,21 @@ async def test_weather_sensor_added_from_settings_page(hass: HomeAssistant, hass
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done(wait_background_tasks=True)
     assert hass.states.get(MET_SENSOR).state == "4.0"
+
+
+async def test_weather_sensor_saved_as_text_and_status_shows_its_name(hass: HomeAssistant, hass_ws_client) -> None:
+    states = {MET: ("cloudy", {"temperature": 4.0, "friendly_name": "Met.no Home"})}
+    # a broken value from an outdated page: the text stored as separate characters
+    entry = await setup(hass, states, stub_devices=False, weather_temperature_sensors=list(MET))
+    from homeassistant.helpers import entity_registry as er
+    assert [e for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+            if "_weather_" in e.unique_id] == []  # no sensors for the characters
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "home_heating/save", "settings": {"weather_temperature_sensors": MET}})
+    response = await client.receive_json()
+    assert response["success"] and response["result"]["settings"]["weather_temperature_sensors"] == [MET]
+    await hass.async_block_till_done(wait_background_tasks=True)
+    await client.send_json({"id": 2, "type": "home_heating/status"})
+    status = (await client.receive_json())["result"]
+    assert status["weather_sensors"] == {MET: MET_SENSOR}
+    assert hass.states.get(MET_SENSOR).state == "4.0"

@@ -7,6 +7,7 @@ No Home Assistant imports: the algorithm tests use the defaults directly.
 
 from __future__ import annotations
 
+import re
 from copy import deepcopy
 
 TEMP = ["sensor", "input_number", "number"]
@@ -43,9 +44,9 @@ SECTIONS = [
              "ahead, for the heating curve, the simple day schedule and cooling."},
             {"key": "weather_temperature_sensors", "type": "entity_list", "domains": ["weather"], "default": [],
              "label": "Temperature sensors from weather entities",
-             "help": "Creates a separate sensor with the current temperature of each weather entity (e.g. Met.no), "
-             "named sensor.home_heating_..._temperature. Add it above as a backup sensor; it goes unavailable when "
-             "the weather entity stops delivering."},
+             "help": "Creates a separate sensor with the current temperature of each weather entity (e.g. Met.no). "
+             "The name of each created sensor is shown next to it after saving. Add that sensor to Outside "
+             "temperature as a backup; it goes unavailable when the weather entity stops delivering."},
             {"key": "in_inside_temp", "type": "entities", "domains": TEMP, "label": "Inside temperature",
              "default": []},
             {"key": "in_water_target_temp", "type": "entities", "domains": TEMP, "label": "Heat pump water target temperature",
@@ -251,12 +252,25 @@ def defaults() -> dict:
     return deepcopy(DEFAULTS)
 
 
+def entity_list(value) -> list[str]:
+    """A list of entity ids. Text is split on commas and spaces; anything that is not an entity id
+    (domain.name) is dropped, also single characters of a text that was stored as a list by mistake."""
+    if isinstance(value, str):
+        value = re.split(r"[,\s]+", value)
+    result = []
+    for item in value or []:
+        item = str(item).strip()
+        if re.fullmatch(r"[a-z_]+\.[\w]+", item) and item not in result:
+            result.append(item)
+    return result
+
+
 def merged(options: dict | None) -> dict:
     """Stored options on top of the defaults (new settings get their default)."""
     result = defaults()
     for key, value in (options or {}).items():
         if key in FIELDS:
-            result[key] = value
+            result[key] = entity_list(value) if FIELDS[key]["type"] in ("entities", "entity_list") else value
     return result
 
 
@@ -294,7 +308,7 @@ def validate(raw: dict) -> dict:
                 if value not in ("mon", "tue", "wed", "thu", "fri", "sat", "sun"):
                     raise ValueError("invalid weekday")
             elif t in ("entities", "entity_list"):
-                value = [str(v).strip() for v in (value or []) if str(v).strip()]
+                value = entity_list(value)
             elif t == "table":
                 rows = [{"outside": float(r["outside"]), "water": float(r["water"])} for r in value or []]
                 if t == "table" and len(rows) < 2:

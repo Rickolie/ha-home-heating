@@ -7,6 +7,7 @@ from typing import Any
 import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 
 from . import settings as settings_mod
 from .const import DOMAIN
@@ -64,7 +65,15 @@ async def ws_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 @callback
 def ws_status(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
-    connection.send_result(msg["id"], entry.runtime_data.status() if entry else {})
+    if entry is None:
+        connection.send_result(msg["id"], {})
+        return
+    registry = er.async_get(hass)
+    weather_sensors = {
+        weather: registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_weather_{weather}")
+        for weather in entry.runtime_data.s.get("weather_temperature_sensors") or []
+    }
+    connection.send_result(msg["id"], {**entry.runtime_data.status(), "weather_sensors": weather_sensors})
 
 
 @websocket_api.websocket_command({

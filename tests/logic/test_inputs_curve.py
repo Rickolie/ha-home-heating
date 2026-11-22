@@ -59,3 +59,14 @@ def test_rolling_average_time_weighted():
     samples = [(now - 30 * hour, 10.0), (now - 6 * hour, 20.0)]
     assert rolling_average(samples, now, 24) == pytest.approx(12.5)
     assert rolling_average([(now - 2 * hour, 5.0)], now, 24) is None  # too little data
+
+
+def test_entity_lists_are_cleaned():
+    from settings import entity_list, merged
+
+    met = "weather.met_no_51_4401196205128_5_452874344063418"
+    assert entity_list(met) == [met]  # text instead of a list
+    assert entity_list("sensor.a, sensor.b sensor.a") == ["sensor.a", "sensor.b"]
+    assert entity_list(list(met)) == []  # a text stored as characters
+    assert merged({"weather_temperature_sensors": list(met)})["weather_temperature_sensors"] == []
+    assert merged({"in_outside_temp": ["sensor.a", "", "x"]})["in_outside_temp"] == ["sensor.a"]

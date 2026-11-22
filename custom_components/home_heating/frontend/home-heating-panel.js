@@ -2,6 +2,9 @@
 // The settings form is generated from the schema in settings.py (websocket home_heating/config),
 // so a new setting only has to be added there.
 
+// The version this page was loaded for (module url ...?v=0.1.4), compared with the running integration
+const PAGE_VERSION = new URL(import.meta.url).searchParams.get("v");
+
 const WEEKDAYS = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
 const STATE_COLORS = { ok: "var(--success-color, #43a047)", warning: "var(--warning-color, #ffa600)", error: "var(--error-color, #db4437)" };
 
@@ -85,7 +88,7 @@ class HomeHeatingPanel extends HTMLElement {
       this._settings = result.settings;
       this._draft = structuredClone(result.settings);
       this._message = { error: false, text: "Saved. The new settings are used directly." };
-      setTimeout(() => this._refreshStatus(), 1500);
+      setTimeout(async () => { await this._refreshStatus(false); this._renderContent(); }, 1500);
     } catch (err) {
       this._message = { error: true, text: err.message || String(err) };
     }
@@ -129,6 +132,10 @@ class HomeHeatingPanel extends HTMLElement {
     area.innerHTML = "";
     const bar = [];
     if (this._message) bar.push(el("div", { class: `message ${this._message.error ? "error" : ""}` }, this._message.text));
+    if (PAGE_VERSION && this._status && this._status.version && this._status.version !== PAGE_VERSION) {
+      bar.push(el("div", { class: "message error" },
+        `Home Heating was updated to ${this._status.version}: reload this page (F5) before changing settings.`));
+    }
     if (this._draft && this._dirty) {
       bar.push(el("div", { class: "savebar" }, "Unsaved changes",
         el("button", { class: "primary", onclick: () => this._save() }, "Save"),
@@ -303,9 +310,19 @@ class HomeHeatingPanel extends HTMLElement {
       list.map((id, i) => el("div", { class: "entity-row" },
         roles ? el("span", { class: "role" }, i === 0 ? "master" : `backup ${i}`) : null,
         this._entityInput({ ...f, key: `${f.key}-${i}` }, id, (v) => { const n = [...list]; n[i] = v; update(n.filter(Boolean)); }),
+        !roles && f.key === "weather_temperature_sensors" ? this._createdSensor(id) : null,
         roles && i > 0 ? el("button", { title: "Make master", onclick: () => { const n = [...list]; n.splice(i, 1); n.unshift(id); update(n); } }, "▲ master") : null,
         el("button", { title: "Remove", onclick: () => { const n = [...list]; n.splice(i, 1); update(n); } }, "✕"))),
       el("button", { onclick: () => update([...list, ""]) }, !roles ? "+ add" : list.length ? "+ backup sensor" : "+ sensor"));
+  }
+
+  _createdSensor(weather) {
+    const created = ((this._status || {}).weather_sensors || {})[weather];
+    if (!weather) return null;
+    if (!created) return el("span", { class: "muted" }, " → sensor is created after saving");
+    const st = this._hass.states[created];
+    return el("span", { class: "created" }, " → creates ", el("b", {}, created),
+      st ? el("span", { class: "muted" }, ` (${st.state}${st.attributes.unit_of_measurement ? " " + st.attributes.unit_of_measurement : ""})`) : null);
   }
 
   _tableInput(f) {
@@ -359,6 +376,7 @@ const STYLE = `
   button { cursor: pointer; }
   button.primary { background: var(--primary-color); color: var(--text-primary-color, #fff); border-color: var(--primary-color); }
   .entity-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .created { font-size: 13px; }
   .role { width: 70px; font-size: 12px; color: var(--secondary-text-color); }
   .buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .message-area { position: sticky; top: 88px; z-index: 1; padding: 0 16px; }
