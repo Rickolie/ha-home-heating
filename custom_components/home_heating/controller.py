@@ -201,13 +201,18 @@ class Controller:
                 sources.append(Source(entity_id, None))
                 continue
             reported = getattr(st, "last_reported", None) or st.last_updated
-            sources.append(Source(entity_id, st.state, now - reported.timestamp()))
+            state = st.state
+            if _domain(entity_id) == "weather" and INPUTS[key][1] == "°C":
+                # A weather entity: its current temperature (the state is the condition, e.g. "cloudy")
+                temperature = st.attributes.get("temperature")
+                state = str(temperature) if temperature is not None and state not in ("unavailable", "unknown") else "unavailable"
+            sources.append(Source(entity_id, state, now - reported.timestamp()))
         deviation = self.s["input_max_deviation"] if INPUTS[key][1] == "°C" else 0
         return select(sources, numeric, self.s["input_max_age_minutes"] * 60, deviation)
 
     async def _async_prefill_outside(self) -> None:
         """The 24 h average from the recorder, so it is right directly after a restart."""
-        entity_ids = (self.s["in_outside_temp"] or [])[:1]
+        entity_ids = [e for e in self.s["in_outside_temp"] or [] if _domain(e) != "weather"][:1]
         if not entity_ids:
             return
         start = dt_util.utcnow() - timedelta(hours=25)
@@ -275,7 +280,11 @@ class Controller:
             return
         self.history_running = True
         try:
-            keys = {key: (self.s[setting] or [None])[0] for key, setting in HISTORY_INPUTS.items()}
+            # The first real sensor per input: a weather entity has no recorded temperature states
+            keys = {
+                key: next((e for e in self.s[setting] or [] if _domain(e) != "weather"), None)
+                for key, setting in HISTORY_INPUTS.items()
+            }
             entity_ids = [e for e in keys.values() if e]
             if not keys["outside"] or not keys["power"]:
                 self.history_error = "outside temperature or heat pump power not configured"

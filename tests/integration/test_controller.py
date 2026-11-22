@@ -128,6 +128,21 @@ async def test_backup_sensor_takes_over(hass: HomeAssistant, calls) -> None:
     assert hass.states.get("sensor.home_heating_input_boiler_temperature").attributes["status"] == "backup"
 
 
+async def test_weather_entity_as_temperature_backup(hass: HomeAssistant, calls) -> None:
+    met = "weather.met_no_51_4401196205128_5_452874344063418"
+    states = {"sensor.sparrow_p60_heat_pump_outside_temperature": "unavailable",
+              met: ("cloudy", {"temperature": 5.0, "temperature_unit": "°C"})}
+    entry = await setup(hass, states, in_outside_temp=["sensor.sparrow_p60_heat_pump_outside_temperature", met])
+    await tick(hass, entry)
+    status = entry.runtime_data.status()
+    assert status["inputs"]["in_outside_temp"] | {"problems": None} == {
+        "value": 5.0, "source": met, "status": "backup", "problems": None}
+    assert status["feedforward"]["water_temp"] == 32.5  # lookup table at 5 °C
+    hass.states.async_set(met, "unavailable", {})
+    await tick(hass, entry)
+    assert entry.runtime_data.status()["inputs"]["in_outside_temp"]["status"] == "unavailable"
+
+
 async def test_device_not_following_alerts_on_mqtt(hass: HomeAssistant, calls, mqtt_mock) -> None:
     events = async_capture_events(hass, EVENT_ALERT)
     entry = await setup(hass, BOILER_STATES, outputs_enabled=True, boiler_enabled=True, use_instant=True)
