@@ -23,7 +23,7 @@ from .controller import Controller
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 type HomeHeatingConfigEntry = ConfigEntry[Controller]
 

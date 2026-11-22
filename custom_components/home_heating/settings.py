@@ -54,8 +54,11 @@ SECTIONS = [
              "help": "For heating the boiler on the cheapest prices. Empty: always plan the cheapest hours."},
             {"key": "in_holiday", "type": "entities", "domains": ["input_boolean", "binary_sensor", "switch"],
              "label": "On holiday", "default": ["input_boolean.onholiday"]},
-            {"key": "weather_entity", "type": "entity", "domains": ["weather"], "label": "Weather forecast",
-             "default": "weather.forecast_home"},
+            {"key": "weather_entity", "type": "entity", "domains": ["weather"], "label": "Outside temperature forecast",
+             "default": "weather.forecast_home",
+             "help": "Weather entity with an hourly forecast (Met.no: weather.forecast_home). Only used when the "
+             "outside temperature is set to Forecast on the Heat pump tab: by default the average of 3 to 5 hours "
+             "ahead, for the heating curve, the simple day schedule and cooling."},
             {"key": "input_max_age_minutes", "type": "number", "default": 0, "min": 0, "max": 1440, "step": 5,
              "unit": "min", "label": "Sensor stale after",
              "help": "A sensor that did not report for this long counts as unavailable. 0: no check "
