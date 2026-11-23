@@ -102,17 +102,6 @@ SECTIONS = [
              "label": "Min water temperature"},
             {"key": "max_water_temp", "type": "number", "default": 55, "min": 25, "max": 65, "step": 0.5, "unit": "°C",
              "label": "Max water temperature"},
-            {"key": "simple_enabled", "type": "bool", "default": True, "label": "Simple day schedule in mild weather"},
-            {"key": "simple_outside_temp", "type": "number", "default": 13.5, "min": -10, "max": 25, "step": 0.5,
-             "unit": "°C", "label": "Simple schedule from average outside temperature",
-             "help": "Your lookup table reaches 24 °C water at 13.3 °C outside."},
-            {"key": "simple_forecast_hours", "type": "number", "default": 24, "min": 1, "max": 48, "step": 1, "unit": "h",
-             "label": "Average over the next (with forecast)"},
-            {"key": "simple_start_time", "type": "time", "default": "00:00", "label": "Start heating at"},
-            {"key": "simple_stop_inside_temp", "type": "number", "default": 21, "min": 15, "max": 25, "step": 0.1,
-             "unit": "°C", "label": "Stop for the day at inside temperature"},
-            {"key": "simple_water_temp", "type": "number", "default": 24, "min": 18, "max": 35, "step": 0.5, "unit": "°C",
-             "label": "Simple schedule water temperature"},
             {"key": "out_water_temp_entity", "type": "entity", "domains": NUMBER_OUT, "default": "",
              "label": "Write water temperature to", "help": "Empty: only calculate."},
             {"key": "out_min_change", "type": "number", "default": 0.5, "min": 0.1, "max": 5, "step": 0.1, "unit": "°C",
@@ -124,6 +113,44 @@ SECTIONS = [
             {"key": "mode_heat", "type": "text", "default": "heat", "label": "Mode option for heating"},
             {"key": "mode_cool", "type": "text", "default": "cool", "label": "Mode option for cooling"},
             {"key": "mode_off", "type": "text", "default": "off", "label": "Mode option for off"},
+        ],
+    },
+    {
+        "id": "simple",
+        "title": "Simple day schedule",
+        "help": (
+            "In mild weather the heating curve would ask for a low water temperature all day long. Instead, the "
+            "simple day schedule heats in one block per day.\n\n"
+            "How it works:\n"
+            "- It applies when the average outside temperature is at or above 'From average outside temperature'. "
+            "Below that, the normal heating curve (Heat pump tab) is used.\n"
+            "- The average is the measured average of the last 24 hours. With Outside temperature set to Forecast "
+            "on the Heat pump tab, it is the average forecast of the next 'Average over the next' hours.\n"
+            "- From 'Start heating at', the heat pump heats at 'Water temperature'.\n"
+            "- It keeps heating until the inside temperature reaches 'Stop at inside temperature'. Then it is off "
+            "for the rest of the day, until the next start time.\n"
+            "- How long it heats is not fixed: it depends on how cold the house is. When it is already warm enough "
+            "inside at the start time, it does not heat that day.\n"
+            "- Without an inside temperature it keeps heating; the watchdog warns about that.\n\n"
+            "The Status tab shows mode 'Simple' and whether the heat pump is heating or off for today."
+        ),
+        "fields": [
+            {"key": "simple_enabled", "type": "bool", "default": True, "label": "Simple day schedule in mild weather",
+             "help": "Off: always the heating curve."},
+            {"key": "simple_outside_temp", "type": "number", "default": 13.5, "min": -10, "max": 25, "step": 0.5,
+             "unit": "°C", "label": "From average outside temperature",
+             "help": "Your lookup table reaches 24 °C water at 13.3 °C outside: above that, the curve would ask "
+             "for less than 24 °C."},
+            {"key": "simple_forecast_hours", "type": "number", "default": 24, "min": 1, "max": 48, "step": 1, "unit": "h",
+             "label": "Average over the next",
+             "help": "Only with Outside temperature set to Forecast on the Heat pump tab."},
+            {"key": "simple_start_time", "type": "time", "default": "00:00", "label": "Start heating at",
+             "help": "Start of the heating day. Before this time the previous day still counts."},
+            {"key": "simple_stop_inside_temp", "type": "number", "default": 21, "min": 15, "max": 25, "step": 0.1,
+             "unit": "°C", "label": "Stop at inside temperature",
+             "help": "Off for the rest of the day once the inside temperature reaches this."},
+            {"key": "simple_water_temp", "type": "number", "default": 24, "min": 18, "max": 35, "step": 0.5, "unit": "°C",
+             "label": "Water temperature", "help": "While heating with the simple day schedule."},
         ],
     },
     {
